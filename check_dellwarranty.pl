@@ -4,12 +4,11 @@
 # Purpose:	Get Dell Warranty for Dell Gear
 # Changelog:
 #       * 1/10/2022 - Initial Release
-#	* 2/14/2024 - Update to Resolve Dell Token and Format Changes
 ##############################
 my $prog_author	 = "Brandon McCorkle";
-my $prog_date	 = "February 14th, 2024";
+my $prog_date	 = "January 10th, 2022";
 my $prog_name	 = "check_dellwarranty.pl";
-my $prog_version = "1.1";
+my $prog_version = "1.0";
 
 #
 # Copyright (c) 2022, Brandon McCorkle <brandon.mccorkle@gmail.com>
@@ -417,13 +416,12 @@ sub sub_get_snmp() {
 sub sub_get_token() {
 	my $retcode;
 	my $arg="client_id=$client_id&client_secret=$client_secret&grant_type=$grant_type";
- 	my $raw_data;
 
 	# Setup Curl Options
 	$curl->setopt(CURLOPT_POST(),1);
 	$curl->setopt(CURLOPT_POSTFIELDS, $arg);
 	$curl->setopt(CURLOPT_URL, $url_token);
-	$curl->setopt(CURLOPT_WRITEDATA,\$raw_data);
+	$curl->setopt(CURLOPT_WRITEDATA,\$access_token);
 
 	# Execute Request
 	$retcode = $curl->perform;
@@ -435,16 +433,16 @@ sub sub_get_token() {
 	}
 
 	# Parse out Token from Returned Data
-	$access_token = $raw_data =~ m/([a-z0-9]+\-[a-z0-9]+\-[a-z0-9]+\-[a-z0-9]+\-[a-z0-9]+\-[a-z0-9]+)/;
-	$access_token = $1;
+        $access_token = $raw_data =~ m/([a-z0-9]+\-[a-z0-9]+\-[a-z0-9]+\-[a-z0-9]+\-[a-z0-9]+\-[a-z0-9]+)/;
+        $access_token = $1;
 
-	#Debug
-	if ($debug == 1) {
+        #Debug
+        if ($debug == 1) {
                 print "DEBUG: RAW DATA...\n";
                 print "DEBUG: $raw_data\n\n";
-		print "DEBUG: RETRIEVED ACCESS TOKEN...\n";
-		print "DEBUG: $access_token\n\n";
-	}
+                print "DEBUG: RETRIEVED ACCESS TOKEN...\n";
+                print "DEBUG: $access_token\n\n";
+        }
 
 	return;
 }
@@ -497,13 +495,13 @@ sub sub_parse_info {
 	my ($sdate,$edate,$entitle,$level);
 
 	#Get Warranty List & Number of Warranties
-	@warranty_list = $warranty_output =~ m/(<entitlement><itemNumber>[[:digit:]]+\-[[:digit:]]+<\/itemNumber><startDate>\d{4}\-\d{1,2}\-\d{1,2}[TZ:\.[:digit:]\-]+<\/startDate><endDate>\d{4}\-\d{1,2}\-\d{1,2}[TZ:\.[:digit:]\-]+<\/endDate><entitlementType>[[:alpha:]]+<\/entitlementType><serviceLevelCode>[[:alnum:]\+]+<\/serviceLevelCode><serviceLevelDescription>[[:alnum:][:space:]\/]+<\/serviceLevelDescription><serviceLevelGroup>[[:digit:]]+<\/serviceLevelGroup><\/entitlement>)/g;
+	@warranty_list = $warranty_output =~ m/({"itemNumber":"[[:alnum:][:space:]"\(\)\/,:\.\+\-]+\})/g;
 	$warranty_count = $#warranty_list + 1;
 
 	#Get Ship Date
-	$shipdate = $warranty_output =~ m/(<shipDate>\d{4}\-(0[1-9]|1[0-2])\-\d{1,2}[TZ:\.[:digit:]\-]+<\/shipDate>|<shipDate><\/shipDate>)/;
+	$shipdate = $warranty_output =~ m/("shipDate":"\d{4}\-(0[1-9]|1[0-2])\-\d{1,2}[TZ:\.[:digit:]\-]+"|shipDate":null)/;
 	$shipdate = $1;
-	if ($shipdate eq "<shipDate><\/shipDate>") {
+	if ($shipdate eq "shipDate\":null") {
 		$shipdate = "null";
 	}
 	else {
@@ -513,14 +511,15 @@ sub sub_parse_info {
 	}
 
 	#Get System Description
-	$sysdesc = $warranty_output =~ m/(<productLineDescription>([[:alnum:]]+|\s)+<\/productLineDescription>|<productLineDescription><\/productLineDescription>)/;
+	$sysdesc = $warranty_output =~ m/("productLineDescription":"([[:alnum:]]+|\s)+"|productLineDescription":null)/;
 	$sysdesc = $1;
-	if ($sysdesc eq "<productLineDescription><\/productLineDescription>") {
+	if ($sysdesc eq "productLineDescription\":null") {
 		$sysdesc = "null";
 	}
         else {
-		$sysdesc =~ s /<productLineDescription>//;
-		$sysdesc =~ s /<\/productLineDescription>//;
+		@splitdata = split(/":"/, $sysdesc);
+	        chop($splitdata[1]);
+		$sysdesc = $splitdata[1];
 	}
 
         #Debug
@@ -535,33 +534,33 @@ sub sub_parse_info {
 	#Place Warranty Info into Array
 	if ($warranty_count != 0) {
 		for $i (0 .. $#warranty_list) {
-                        # Store Start Date (epoch time for easy sorting)
-                        $sdate = $warranty_list[$i] =~ m/(<startDate>[TZ:\.[:digit:]\-]+<\/startDate>)/;
-                        $sdate = $1;
-                        $sdate = $sdate =~ m/(\d{4}\-(0[1-9]|1[0-2])\-\d{1,2})/;
-                        $sdate = $1;
-                        $warranties[$i][0] = Time::Piece->strptime($sdate, '%F')->strftime('%s');
+			# Store Start Date (epoch time for easy sorting)
+			$sdate = $warranty_list[$i] =~ m/("startDate":"[TZ:\.[:digit:]\-]+")/;
+			$sdate = $1;
+			$sdate = $sdate =~ m/(\d{4}\-(0[1-9]|1[0-2])\-\d{1,2})/;
+			$sdate = $1;
+			$warranties[$i][0] = Time::Piece->strptime($sdate, '%F')->strftime('%s');
 
-                        # Store End Date (epoch time for easy sorting)
-                        $edate = $warranty_list[$i] =~ m/(<endDate>[TZ:\.[:digit:]\-]+<\/endDate>)/;
-                        $edate = $1;
-                        $edate = $edate =~ m/(\d{4}\-(0[1-9]|1[0-2])\-\d{1,2})/;
-                        $edate = $1;
-                        $warranties[$i][1] = Time::Piece->strptime($edate, '%F')->strftime('%s');
+	                # Store End Date (epoch time for easy sorting)
+                	$edate = $warranty_list[$i] =~ m/("endDate":"[TZ:\.[:digit:]\-]+")/;
+        	        $edate = $1;
+	                $edate = $edate =~ m/(\d{4}\-(0[1-9]|1[0-2])\-\d{1,2})/;
+                	$edate = $1;
+        	        $warranties[$i][1] = Time::Piece->strptime($edate, '%F')->strftime('%s');
 
-                        # Store Entitlement
-                        $entitle = $warranty_list[$i] =~ m/(<entitlementType>[[:alnum:][:space:]]+<\/entitlementType>)/;
-                        $entitle = $1;
-                        $entitle =~ s /<entitlementType>//;
-                        $entitle =~ s /<\/entitlementType>//;
-                        $warranties[$i][2] = $entitle;
+			# Store Entitlement
+                	$entitle = $warranty_list[$i] =~ m/("entitlementType":"[[:alnum:][:space:]]+")/;
+        	        $entitle = $1;
+			@splitdata = split(/":"/, $entitle);	
+			chop($splitdata[1]);
+			$warranties[$i][2] = $splitdata[1];
 
-                        # Store Level
-                        $level = $warranty_list[$i] =~ m/(<serviceLevelDescription>[[:alnum:][:space:]\(\)\/]+<\/serviceLevelDescription>)/;
-                        $level = $1;
-                        $level =~ s /<serviceLevelDescription>//;
-                        $level =~ s /<\/serviceLevelDescription>//;
-                        $warranties[$i][3] = $level;
+	                # Store Level
+			$level = $warranty_list[$i] =~ m/("serviceLevelDescription":"[[:alnum:][:space:]\(\)\/]+")/;
+        	        $level = $1;
+	                @splitdata = split(/":"/, $level);
+                	chop($splitdata[1]);
+        	        $warranties[$i][3] = $splitdata[1];
 
 			if ($debug == 1) {		
 				$k = $i + 1;
