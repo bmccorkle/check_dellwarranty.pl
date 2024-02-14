@@ -416,12 +416,13 @@ sub sub_get_snmp() {
 sub sub_get_token() {
 	my $retcode;
 	my $arg="client_id=$client_id&client_secret=$client_secret&grant_type=$grant_type";
+ 	my $raw_data;
 
 	# Setup Curl Options
 	$curl->setopt(CURLOPT_POST(),1);
 	$curl->setopt(CURLOPT_POSTFIELDS, $arg);
 	$curl->setopt(CURLOPT_URL, $url_token);
-	$curl->setopt(CURLOPT_WRITEDATA,\$access_token);
+	$curl->setopt(CURLOPT_WRITEDATA,\$raw_data);
 
 	# Execute Request
 	$retcode = $curl->perform;
