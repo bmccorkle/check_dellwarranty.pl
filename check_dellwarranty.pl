@@ -416,12 +416,13 @@ sub sub_get_snmp() {
 sub sub_get_token() {
 	my $retcode;
 	my $arg="client_id=$client_id&client_secret=$client_secret&grant_type=$grant_type";
+ 	my $raw_data;
 
 	# Setup Curl Options
 	$curl->setopt(CURLOPT_POST(),1);
 	$curl->setopt(CURLOPT_POSTFIELDS, $arg);
 	$curl->setopt(CURLOPT_URL, $url_token);
-	$curl->setopt(CURLOPT_WRITEDATA,\$access_token);
+	$curl->setopt(CURLOPT_WRITEDATA,\$raw_data);
 
 	# Execute Request
 	$retcode = $curl->perform;
@@ -433,11 +434,13 @@ sub sub_get_token() {
 	}
 
 	# Parse out Token from Returned Data
-	$access_token = $access_token =~ m/([a-z0-9]+\-[a-z0-9]+\-[a-z0-9]+\-[a-z0-9]+\-[a-z0-9]+)/;
+	$access_token = $raw_data =~ m/([a-z0-9]+\-[a-z0-9]+\-[a-z0-9]+\-[a-z0-9]+\-[a-z0-9]+\-[a-z0-9]+)/;
 	$access_token = $1;
 
 	#Debug
 	if ($debug == 1) {
+                print "DEBUG: RAW DATA...\n";
+                print "DEBUG: $raw_data\n\n";
 		print "DEBUG: RETRIEVED ACCESS TOKEN...\n";
 		print "DEBUG: $access_token\n\n";
 	}
@@ -497,9 +500,9 @@ sub sub_parse_info {
 	$warranty_count = $#warranty_list + 1;
 
 	#Get Ship Date
-	$shipdate = $warranty_output =~ m/("shipDate":"\d{4}\-(0[1-9]|1[0-2])\-\d{1,2}[TZ:\.[:digit:]\-]+"|shipDate":null)/;
+	$shipdate = $warranty_output =~ m/(<shipDate>\d{4}\-(0[1-9]|1[0-2])\-\d{1,2}[TZ:\.[:digit:]\-]+<\/shipDate>|<shipDate><\/shipDate>)/;
 	$shipdate = $1;
-	if ($shipdate eq "shipDate\":null") {
+	if ($shipdate eq "<shipDate><\/shipDate>") {
 		$shipdate = "null";
 	}
 	else {
@@ -509,15 +512,14 @@ sub sub_parse_info {
 	}
 
 	#Get System Description
-	$sysdesc = $warranty_output =~ m/("productLineDescription":"([[:alnum:]]+|\s)+"|productLineDescription":null)/;
+	$sysdesc = $warranty_output =~ m/(<productLineDescription>([[:alnum:]]+|\s)+<\/productLineDescription>|<productLineDescription><\/productLineDescription>)/;
 	$sysdesc = $1;
-	if ($sysdesc eq "productLineDescription\":null") {
+	if ($sysdesc eq "<productLineDescription><\/productLineDescription>") {
 		$sysdesc = "null";
 	}
         else {
-		@splitdata = split(/":"/, $sysdesc);
-	        chop($splitdata[1]);
-		$sysdesc = $splitdata[1];
+		$sysdesc =~ s /<productLineDescription>//;
+		$sysdesc =~ s /<\/productLineDescription>//;
 	}
 
         #Debug
