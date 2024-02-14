@@ -497,7 +497,7 @@ sub sub_parse_info {
 	my ($sdate,$edate,$entitle,$level);
 
 	#Get Warranty List & Number of Warranties
-	@warranty_list = $warranty_output =~ m/(<entitlement><itemNumber>[[:digit:]]+\-[[:digit:]]+<\/itemNumber><startDate>\d{4}\-(0[1-9]|1[0-2])\-\d{1,2}[TZ:\.[:digit:]\-]+<\/startDate><endDate>\d{4}\-(0[1-9]|1[0-2])\-\d{1,2}[TZ:\.[:digit:]\-]+<\/endDate><entitlementType>[[:alpha:]]+<\/entitlementType><serviceLevelCode>[[:alnum:]\+]+<\/serviceLevelCode><serviceLevelDescription>[[:alnum:][:space:]\/]+<\/serviceLevelDescription><serviceLevelGroup>[[:digit:]]+<\/serviceLevelGroup><\/entitlement>)/g;
+	@warranty_list = $warranty_output =~ m/(<entitlement><itemNumber>[[:digit:]]+\-[[:digit:]]+<\/itemNumber><startDate>\d{4}\-\d{1,2}\-\d{1,2}[TZ:\.[:digit:]\-]+<\/startDate><endDate>\d{4}\-\d{1,2}\-\d{1,2}[TZ:\.[:digit:]\-]+<\/endDate><entitlementType>[[:alpha:]]+<\/entitlementType><serviceLevelCode>[[:alnum:]\+]+<\/serviceLevelCode><serviceLevelDescription>[[:alnum:][:space:]\/]+<\/serviceLevelDescription><serviceLevelGroup>[[:digit:]]+<\/serviceLevelGroup><\/entitlement>)/g;
 	$warranty_count = $#warranty_list + 1;
 
 	#Get Ship Date
