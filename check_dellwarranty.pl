@@ -7,7 +7,7 @@
 #	* 2/14/2024 - Update to Resolve Dell Token and Format Changes
 ##############################
 my $prog_author	 = "Brandon McCorkle";
-my $prog_date	 = "January 10th, 2022";
+my $prog_date	 = "February 14th, 2024";
 my $prog_name	 = "check_dellwarranty.pl";
 my $prog_version = "1.1";
 
