@@ -4,11 +4,12 @@
 # Purpose:	Get Dell Warranty for Dell Gear
 # Changelog:
 #       * 1/10/2022 - Initial Release
+#	* 2/14/2024 - Update for changed Dell Token Length
 ##############################
 my $prog_author	 = "Brandon McCorkle";
-my $prog_date	 = "January 10th, 2022";
+my $prog_date	 = "February 14th, 2024";
 my $prog_name	 = "check_dellwarranty.pl";
-my $prog_version = "1.0";
+my $prog_version = "1.1";
 
 #
 # Copyright (c) 2022, Brandon McCorkle <brandon.mccorkle@gmail.com>
